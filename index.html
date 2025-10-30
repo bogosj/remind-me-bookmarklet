@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remind Me Bookmarklet</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f4; text-align: center; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; }
+        p { max-width: 400px; line-height: 1.5; }
+        .bookmarklet {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: grab;
+            border: 2px dashed #0056b3;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .bookmarklet.disabled {
+            background-color: #cccccc;
+            border-color: #999999;
+            cursor: not-allowed;
+        }
+        .instructions { text-align: left; margin-top: 1.5rem; }
+        .secret-container {
+            display: flex;
+            align-items: center;
+            background-color: #e9ecef;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+        }
+        #uuid {
+            font-family: monospace;
+            font-size: 1rem;
+            margin-right: 1rem;
+            flex-grow: 1;
+            overflow-wrap: break-word;
+        }
+        #copy-btn {
+            padding: 5px 10px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 0.5rem 0;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bookmarklet Generator</h1>
+        
+        <div class="instructions">
+            <h4>Step 1: Set up your Google Script</h4>
+            <p>Copy the secret key below. In your Google Apps Script project, go to <strong>Project Settings > Script Properties</strong> and add a new property:</p>
+            <ul>
+                <li><strong>Property:</strong> <code>SHARED_SECRET</code></li>
+                <li><strong>Value:</strong> (Paste the secret key here)</li>
+            </ul>
+            <div class="secret-container">
+                <code id="uuid"></code>
+                <button id="copy-btn">Copy</button>
+            </div>
+
+            <h4>Step 2: Configure your Bookmarklet</h4>
+            <p>After deploying your script, paste the **Web App URL** into the box below.</p>
+            <input type="text" id="web-app-url" placeholder="Paste your Web App URL here...">
+
+            <h4>Step 3: Save the Bookmarklet</h4>
+            <p>Once you've pasted the URL above, the "Remind Me" link below will be ready. Drag it to your browser's bookmarks bar.</p>
+        </div>
+
+        <a id="bookmarklet-link" class="bookmarklet disabled" href="#">
+            Remind Me
+        </a>
+    </div>
+    <script>
+        const uuidElem = document.getElementById('uuid');
+        const copyBtn = document.getElementById('copy-btn');
+        const urlInput = document.getElementById('web-app-url');
+        const bookmarkletLink = document.getElementById('bookmarklet-link');
+
+        const newUuid = crypto.randomUUID();
+        uuidElem.textContent = newUuid;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(newUuid).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+            });
+        });
+
+        urlInput.addEventListener('input', () => {
+            const webAppUrl = urlInput.value.trim();
+            if (webAppUrl) {
+                const href = `javascript:void(fetch('${webAppUrl}',{method:'POST',mode:'no-cors',body:JSON.stringify({url:window.location.href,secret:'${newUuid}'})}).catch(e=>console.error(e)))`;
+                bookmarkletLink.href = href;
+                bookmarkletLink.classList.remove('disabled');
+            } else {
+                bookmarkletLink.href = '#';
+                bookmarkletLink.classList.add('disabled');
+            }
+        });
+    </script>
+</body>
+</html>
